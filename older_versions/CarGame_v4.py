@@ -3,7 +3,7 @@ import math
 from Background_v4 import Background
 
 # Constants for Car
-CAR_IMAGE_PATH = 'assets/images/car_1.png'
+CAR_IMAGE_PATH = '../assets/images/car_1.png'
 CAR_SCALE_FACTOR = 0.2  # Adjust this to scale the car image appropriately
 # Car physics constants (world units)
 CAR_MAX_SPEED_FORWARD = 5.0  # world units / sec
@@ -167,7 +167,8 @@ def run_game():
     pygame.font.init()
 
     try:
-        game_icon = pygame.image.load('assets/images/game_icon.png')
+        game_icon = pygame.image.load(
+            '../assets/images/game_icon.png')
         pygame.display.set_icon(game_icon)
     except pygame.error as e:
         print(f"Error loading game icon: assets/images/game_icon.png")
