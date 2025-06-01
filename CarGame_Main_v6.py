@@ -1,14 +1,14 @@
 import pygame
-from CarGame_Background_v5 import Background
-from CarGame_PlayerCar_v5 import Car
-from CarGame_TitleScreen_v5 import TitleScreen
+from CarGame_Background_v6 import Background
+from CarGame_PlayerCar_v6 import Car
+from CarGame_TitleScreen_v6 import TitleScreen
+from CarGame_GameOverScreen_v6 import GameOverScreen
 
 # --- Game States ---
 STATE_TITLE = "TITLE"
 STATE_PLAYING = "PLAYING"
+STATE_GAME_OVER = "GAME_OVER"  # New state
 
-
-# Removed color constants that are now in title_screen.py
 
 def run_game():
     pygame.init()
@@ -20,7 +20,6 @@ def run_game():
     except pygame.error as e:
         print(f"Warning: Error loading game icon: {e}")
 
-    # --- Core Game Setup ---
     screen_width = 1280
     screen_height = 720
     screen = pygame.display.set_mode((screen_width, screen_height))
@@ -28,9 +27,8 @@ def run_game():
     clock = pygame.time.Clock()
     fps = 60
 
-    # --- Game-wide Constants ---
     world_unit_scale = 100.0
-    camera_acceleration = 10.0
+    camera_acceleration = 10.0  # pixels/sec^2 relative to total_elapsed_time_playing
 
     grass_pixel_size_const = 10
     grass_colours_const = [
@@ -39,15 +37,25 @@ def run_game():
         pygame.Color("#649841")
     ]
 
-    # --- State Management & Screen Objects ---
     current_game_state = STATE_TITLE
     title_screen_handler = TitleScreen(screen_width, screen_height)
+    game_over_screen_handler = GameOverScreen(screen_width,
+                                              screen_height)  # Instantiate
 
-    # --- Gameplay Variables (initialized on game start) ---
     player_car = None
     game_background = None
     total_elapsed_time_playing = 0.0
     game_camera_world_y = 0.0
+
+    # Game Over condition variables
+    car_off_screen_timer = 0.0
+    CAR_OFF_SCREEN_LIMIT_SECONDS = 3.0
+    # Define a margin for "off-screen". If car's rect is completely outside these bounds.
+    # A simpler check: car.rect.colliderect(screen.get_rect()) == False
+    # Or, more generously: if any part of the car is visible, it's not "off-screen".
+    # The request was "outside of the screen by a decent amount (not visible in the camera)".
+    # So, if the car's rect does NOT intersect the screen rect.
+    screen_bounds_rect = screen.get_rect()
 
     is_running = True
     while is_running:
@@ -68,16 +76,14 @@ def run_game():
 
             if title_screen_handler.should_start_game():
                 current_game_state = STATE_PLAYING
-
-                # Reset/Initialize game-specific variables for a fresh game
                 total_elapsed_time_playing = 0.0
                 game_camera_world_y = 0.0
+                car_off_screen_timer = 0.0  # Reset for new game
 
                 game_background = Background(screen_width,
                                              screen_height,
                                              grass_pixel_size_const,
                                              grass_colours_const)
-
                 car_initial_world_x = (
                                                   screen_width / 2.0) / world_unit_scale
                 car_initial_world_y = ((
@@ -85,34 +91,57 @@ def run_game():
                 player_car = Car(car_initial_world_x,
                                  car_initial_world_y)
 
-                title_screen_handler.reset()  # Reset title screen state for potential re-entry
+                title_screen_handler.reset()
 
         # -------------------- STATE: PLAYING ---------------------
         elif current_game_state == STATE_PLAYING:
-            if player_car is None or game_background is None:
+            if player_car is None or game_background is None:  # Should not happen if logic is correct
                 print(
-                    "Error: Game objects not initialized for PLAYING state. Reverting to TITLE.")
+                    "Error: Game objects not initialized. Reverting to TITLE.")
                 current_game_state = STATE_TITLE
-                title_screen_handler.reset()  # Ensure title screen is reset
+                title_screen_handler.reset()
                 continue
 
             player_car.update(delta_time, keys_pressed)
+            # Update car's screen rect for collision/bounds checks *after* its state is updated
+            player_car.update_screen_rect(game_camera_world_y,
+                                          world_unit_scale)
 
+            # --- Game Over Check: Car Off-Screen ---
+            if not player_car.rect.colliderect(screen_bounds_rect):
+                car_off_screen_timer += delta_time
+                if car_off_screen_timer >= CAR_OFF_SCREEN_LIMIT_SECONDS:
+                    current_game_state = STATE_GAME_OVER
+                    game_over_screen_handler.set_messages(
+                        reason_msg="You drifted too far off course!"
+                        # Or "Too slow to keep up!"
+                    )
+                    game_over_screen_handler.reset()  # Reset its internal state for display
+            else:
+                car_off_screen_timer = 0.0  # Reset timer if car is back on screen
+
+            # Camera movement
             camera_speed_pixels_sec = camera_acceleration * total_elapsed_time_playing
             camera_y_pixel_change = -camera_speed_pixels_sec * delta_time
-
             game_camera_world_y += camera_y_pixel_change / world_unit_scale
-
             total_elapsed_time_playing += delta_time
 
-            # Define a fill color for playing state if needed, or rely on background
-            playing_state_bg_color = pygame.Color(
-                "black")  # Or some other default
-            screen.fill(playing_state_bg_color)
+            # Drawing
+            screen.fill(pygame.Color("black"))
             game_background.draw(screen, game_camera_world_y,
                                  world_unit_scale)
             player_car.draw(screen, game_camera_world_y,
                             world_unit_scale)
+
+        # ----------------- STATE: GAME OVER --------------------
+        elif current_game_state == STATE_GAME_OVER:
+            game_over_screen_handler.update(delta_time, keys_pressed)
+            game_over_screen_handler.draw(screen)
+
+            if game_over_screen_handler.should_restart_game():
+                current_game_state = STATE_TITLE  # Go back to title screen
+                title_screen_handler.reset()  # Reset title screen
+                game_over_screen_handler.reset()  # Reset game over screen
 
         pygame.display.flip()
 

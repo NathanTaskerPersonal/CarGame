@@ -38,11 +38,11 @@ class Car:
                                                      (width, height))
 
         self.image = self.image_original  # Current image to draw (rotated)
-        self.rect = self.image.get_rect()  # Screen rect, center updated in draw method
+        # Initialize rect. Its position will be updated by update_screen_rect() or draw().
+        self.rect = self.image.get_rect()
 
         # Car's state
-        self.angle = 0.0  # Degrees. 0 = facing screen top (along negative Y in typical math coords).
-        # Positive angle for clockwise rotation.
+        self.angle = 0.0  # Degrees. 0 = facing screen top. Positive angle for clockwise.
         self.velocity = 0.0  # world units / sec (positive for forward, negative for reverse)
         self.angular_velocity = 0.0  # degrees / sec (positive for clockwise)
 
@@ -55,11 +55,24 @@ class Car:
         magnitude_change = rate * delta_time
 
         new_value = value - sign * magnitude_change
-        # Check if deceleration caused the value to overshoot zero
         if (sign == 1.0 and new_value < 0) or (
                 sign == -1.0 and new_value > 0):
             return 0.0
         return new_value
+
+    def update_screen_rect(self, camera_world_y, world_unit_scale):
+        """
+        Updates self.rect to reflect the car's current screen position and rotation.
+        This should be called after self.update() if game logic needs the screen rect.
+        The self.image (rotated) must be up-to-date before calling this.
+        """
+        # self.image is updated at the end of self.update()
+        screen_center_x = round(self.world_x * world_unit_scale)
+        screen_center_y = round(
+            (self.world_y - camera_world_y) * world_unit_scale)
+        # Get rect for the *current* (potentially rotated) image
+        self.rect = self.image.get_rect(
+            center=(screen_center_x, screen_center_y))
 
     def update(self, delta_time, keys_pressed):
         # --- Braking ---
@@ -73,7 +86,6 @@ class Car:
             self.angular_velocity = self._decelerate_value(
                 self.angular_velocity,
                 CAR_BRAKE_ROTATION_DECELERATION, delta_time)
-            # When braking, ignore other movement input for acceleration/steering
         else:
             # --- Acceleration / Deceleration (Forward/Backward) ---
             is_accelerating_forward = keys_pressed[pygame.K_w]
@@ -84,21 +96,15 @@ class Car:
                 self.velocity = min(self.velocity,
                                     CAR_MAX_SPEED_FORWARD)
             elif is_accelerating_reverse:
-                self.velocity -= CAR_ACCELERATION * delta_time  # Using same accel rate for simplicity
+                self.velocity -= CAR_ACCELERATION * delta_time
                 self.velocity = max(self.velocity,
                                     -CAR_MAX_SPEED_REVERSE)
             else:
-                # Natural deceleration if no acceleration input
                 self.velocity = self._decelerate_value(self.velocity,
                                                        CAR_DECELERATION,
                                                        delta_time)
 
             # --- Steering (Rotation) ---
-            # Steering is allowed if the car is moving above a minimum speed.
-            # "if car is stationary, steering doesn't work."
-            # "when steering, if not already, forward velocity must accelerate above a minimum value"
-            # This implies that to start steering from stationary, you need to accelerate (W/S)
-            # until min_speed is reached.
             can_steer = abs(
                 self.velocity) >= CAR_MIN_SPEED_FOR_STEERING
 
@@ -115,47 +121,38 @@ class Car:
                     self.angular_velocity = min(self.angular_velocity,
                                                 CAR_MAX_ROTATION_SPEED)
                 else:
-                    # Natural angular deceleration (steering wheel centering effect)
                     self.angular_velocity = self._decelerate_value(
                         self.angular_velocity,
                         CAR_ROTATION_DECELERATION, delta_time)
             else:
-                # If can't steer (too slow or stationary), angular velocity naturally decelerates
                 self.angular_velocity = self._decelerate_value(
                     self.angular_velocity, CAR_ROTATION_DECELERATION,
                     delta_time)
 
         # --- Update position and angle based on velocities ---
         self.angle += self.angular_velocity * delta_time
-        self.angle %= 360  # Normalize angle to 0-359 degrees
+        self.angle %= 360
 
-        # Movement vector based on angle.
-        # Angle: 0 degrees = car's nose points towards top of screen (negative Y in world if Y grows down).
-        # math.sin/cos expect radians.
         angle_rad = math.radians(self.angle)
-
-        # dx = sin(angle) * velocity (if angle 0 is right)
-        # dy = cos(angle) * velocity (if angle 0 is right, Y positive up)
-        # For 0 = UP: dx = sin(angle) * vel; dy = -cos(angle) * vel (Pygame Y is positive down)
         self.world_x += math.sin(
             angle_rad) * self.velocity * delta_time
         self.world_y -= math.cos(
             angle_rad) * self.velocity * delta_time
 
         # Update the display image (rotation)
-        # pygame.transform.rotozoom rotates CCW. If our angle is CW positive, pass -angle.
+        # pygame.transform.rotozoom rotates CCW. Our angle is CW positive, so pass -angle.
         self.image = pygame.transform.rotozoom(self.image_original,
                                                -self.angle, 1.0)
-        # The self.rect will be updated with screen coordinates in the draw() method.
+        # self.rect is NOT directly updated here anymore.
+        # It's updated by update_screen_rect() when needed for game logic,
+        # or by draw() for rendering.
 
     def draw(self, surface, camera_world_y, world_unit_scale):
-        # Convert car's world coordinates to screen coordinates
-        # Explicitly round to nearest int for screen coordinates
+        # Ensure self.rect is up-to-date for drawing, based on the current self.image.
+        # This calculation is the same as in update_screen_rect().
         screen_center_x = round(self.world_x * world_unit_scale)
         screen_center_y = round(
             (self.world_y - camera_world_y) * world_unit_scale)
-
-        # Update the car's screen rectangle position for blitting
         self.rect = self.image.get_rect(
             center=(screen_center_x, screen_center_y))
 
