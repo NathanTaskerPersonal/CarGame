@@ -58,7 +58,7 @@ class Background:
 def run_game():
     pygame.init()
     pygame.font.init()
-    game_icon = pygame.image.load('assets/images/game_icon.png')
+    game_icon = pygame.image.load('../assets/images/game_icon.png')
     pygame.display.set_icon(game_icon)
     screen_width = 1280
     screen_height = 720
