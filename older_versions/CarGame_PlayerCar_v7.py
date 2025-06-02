@@ -2,7 +2,7 @@ import pygame
 import math
 
 # Constants for Car
-CAR_IMAGE_PATH = 'assets/images/car_1.png'
+CAR_IMAGE_PATH = '../assets/images/car_1.png'
 CAR_SCALE_FACTOR = 0.2
 CAR_MAX_SPEED_FORWARD = 5.0
 CAR_MAX_SPEED_REVERSE = 1.0

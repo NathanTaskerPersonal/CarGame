@@ -21,7 +21,8 @@ def run_game():
     pygame.font.init()
 
     try:
-        game_icon = pygame.image.load('assets/images/game_icon.png')
+        game_icon = pygame.image.load(
+            '../assets/images/game_icon.png')
         pygame.display.set_icon(game_icon)
     except pygame.error as e:
         print(f"Warning: Error loading game icon: {e}")
