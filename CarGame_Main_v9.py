@@ -2,12 +2,12 @@ import pygame
 import math
 import os  # For high score file path
 
-from CarGame_Background_v8 import Background
-from CarGame_PlayerCar_v8 import Car as PlayerCar, CAR_SCALE_FACTOR, CAR_MAX_SPEED_FORWARD as PLAYER_CAR_MAX_SPEED_WORLD
-from CarGame_TitleScreen_v8 import TitleScreen
-from CarGame_GameOverScreen_v8 import GameOverScreen
-from CarGame_ObstacleManager_v8 import ObstacleManager  # For stationary obstacles
-from CarGame_BotManager_v8 import BotManager  # For bot cars
+from CarGame_Background_v9 import Background
+from CarGame_PlayerCar_v9 import Car as PlayerCar, CAR_SCALE_FACTOR, CAR_MAX_SPEED_FORWARD as PLAYER_CAR_MAX_SPEED_WORLD
+from CarGame_TitleScreen_v9 import TitleScreen
+from CarGame_GameOverScreen_v9 import GameOverScreen
+from CarGame_ObstacleManager_v9 import ObstacleManager  # For stationary obstacles
+from CarGame_BotManager_v9 import BotManager  # For bot cars
 
 # --- Game States ---
 STATE_TITLE = "TITLE"
