@@ -18,7 +18,7 @@ STATE_GAME_OVER = "GAME_OVER"
 CAMERA_SPEED_ASYMPTOTE_FACTOR = 0.95
 CAMERA_SPEED_APPROACH_RATE = 0.05  # Tune this for camera speed ramp-up
 
-HIGH_SCORE_FILE = "highscore.txt"
+HIGH_SCORE_FILE = "../highscore.txt"
 
 
 def load_high_score():
@@ -45,7 +45,8 @@ def run_game():
     pygame.font.init()
 
     try:
-        game_icon = pygame.image.load('assets/images/game_icon.png')
+        game_icon = pygame.image.load(
+            '../assets/images/game_icon.png')
         pygame.display.set_icon(game_icon)
     except pygame.error as e:
         print(f"Warning: Error loading game icon: {e}")
