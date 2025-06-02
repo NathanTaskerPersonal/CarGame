@@ -3,7 +3,7 @@ import math
 
 
 # Constants for Car
-CAR_IMAGE_PATH = 'assets/images/car_1.png'
+CAR_IMAGE_PATH = '../assets/images/car_1.png'
 CAR_SCALE_FACTOR = 0.2  # Adjust this to scale the car image appropriately
 # Car physics constants (world units)
 CAR_MAX_SPEED_FORWARD = 5.0  # world units / sec
